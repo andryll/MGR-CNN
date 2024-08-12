@@ -62,7 +62,7 @@ def readSongs (genre, numSongs, sr=44100, duration = 30):
   #Percorre todos os gêneros da lista
   for g in genrelist:
     #Pega o caminho para a pasta do gênero escolhido
-    dir_path = os.path.join('C:/Users/andry/OneDrive/Documentos/GitHub/MGR-IC/songs', g)
+    dir_path = os.path.join('songs', g)
     #Lista os arquivos da pasta e os embaralha
     files = os.listdir(dir_path)
     files.sort
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     print(df['spectogram'][0].shape)
 
     #Saving the data
-    df.to_pickle('C:/Users/andry/OneDrive/Documentos/GitHub/MGR-IC/ft2/5s/cnn_spectrograms.pkl')
+    df.to_pickle('cnn_spectrograms.pkl')
 
     print("Done!")
 
