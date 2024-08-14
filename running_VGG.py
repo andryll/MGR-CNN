@@ -114,7 +114,7 @@ def trainVGG16(df, n_songs):
         for test in test_list:
 
             print("=============================")
-            print(" * Running for split = ", split)
+            print(f" * Running for split = {split} | seed = {seed}")
             print("============================")            
 
       		# ----------------------------
