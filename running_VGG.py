@@ -13,30 +13,31 @@ import random
 import keras
 
 from keras.models import Sequential
-from keras.layers import Dense, Flatten
+from keras.layers import Dense, Flatten, Dropout
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.callbacks import EarlyStopping, CSVLogger
 from tensorflow.keras.applications import VGG16
-from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import balanced_accuracy_score, confusion_matrix
 
 
 #===============================================================================
 
-def get_VGG16_model_Keras(input_shape=(224,224,3)) :
+def get_VGG16_model_Keras(input_shape=(100,100,3)) :
 
-	VGGmodel = Sequential()
-	baseModel = VGG16(
+    VGGmodel = Sequential()
+    baseModel = VGG16(
 		input_shape=input_shape,
 		weights='imagenet',
 		include_top=False,
 	)
-	baseModel.trainable = False
-	VGGmodel.add(baseModel)
-	VGGmodel.add(Flatten())
-	VGGmodel.add(Dense(4096,activation = 'relu'))
-	VGGmodel.add(Dense(10,activation = 'softmax'))
-
-	return(VGGmodel)
+    baseModel.trainable = False
+    VGGmodel.add(baseModel)
+    VGGmodel.add(Flatten())
+    VGGmodel.add(Dense(512,activation = 'relu'))
+    VGGmodel.add(Dropout(0.3))
+    VGGmodel.add(Dense(10,activation = 'softmax'))
+    
+    return(VGGmodel)
 
 
 #===============================================================================
@@ -99,6 +100,9 @@ def trainVGG16(df, n_songs):
 		# ----------------------------
         keras.utils.set_random_seed(seed)
         test_list = BlockSplit(dataframe = df, seed = seed, n_songs=n_songs)
+        
+        #Resetting the predictions
+        conf_matrix = np.zeros((10,10))
 
 # ----------------------------
 # Running for each fold
@@ -118,7 +122,7 @@ def trainVGG16(df, n_songs):
       		# ----------------------------
       
             print(" - defining VGG16 model")
-            model = get_VGG16_model_Keras(input_shape=(224,224,3))
+            model = get_VGG16_model_Keras(input_shape=(100,100,3))
             model.compile(optimizer='adam', loss=CategoricalCrossentropy(), metrics=['accuracy'])
       
       		# ----------------------------
@@ -164,10 +168,16 @@ def trainVGG16(df, n_songs):
             print("bac = ", bac)
       		# print("f1c = ", f1s)
             temp_acc.append(bac)
+            
+            #-------------------------------
+            # getting the confusion matrix
+            #-------------------------------
+            conf_matrix += confusion_matrix(np.argmax(y_test, axis=1), rounded_predictions)
+            
             split += 1
             
         print("----------------------------")
-        all_performances.append([np.mean(temp_acc), seed])
+        all_performances.append([np.mean(temp_acc), seed, conf_matrix])
 		# all_predictions.append(df_pred)
 
 	# ---------------------------------------------------------
@@ -176,7 +186,7 @@ def trainVGG16(df, n_songs):
 	# pred_results = pd.concat(all_predictions, axis = 0) # by row
 	# pred_results[['algo']] = "VGG16"
 
-    perf_results = pd.DataFrame(all_performances, columns=["bac", "seed"])
+    perf_results = pd.DataFrame(all_performances, columns=["bac", "seed", "conf_matrix"])
     return perf_results
 
 
@@ -184,11 +194,11 @@ def trainVGG16(df, n_songs):
 
 if __name__ == "__main__":
 
-    df = pd.read_pickle('C:/Users/andry/OneDrive/Documentos/GitHub/MGR-IC/ft2/5s/cnn_spectrograms.pkl')
+    df = pd.read_pickle('cnn_spectrograms.pkl')
 
     perf_results = trainVGG16(df=df, n_songs = 100)
     	
-    perf_results.to_csv('C:/Users/andry/OneDrive/Documentos/GitHub/MGR-IC/ft2/5s/performances_vgg16.csv', index = False)
+    perf_results.to_pickle('performances_vgg16.pkl', index = False)
     print("Done!")
 
 
